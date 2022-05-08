@@ -122,7 +122,7 @@ func (il *IntegerLiteral) String() string       { return il.Token.Literal }
 
 type BooleanLiteral struct {
 	Token token.Token
-	Value int64
+	Value bool
 }
 
 func (bl *BooleanLiteral) expressionNode()      {}
