@@ -12,7 +12,15 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	fmt.Printf("Hello %s! This is the Monkey programming language\n", user.Username)
+
+	var name string
+	if user.Name == "" {
+		name = user.Username
+	} else {
+		name = user.Name
+	}
+
+	fmt.Printf("Hello %s! This is the Monkey programming language\n", name)
 	fmt.Println("Feel free to type in commands")
 	repl.Start(os.Stdin, os.Stdout)
 }

@@ -27,6 +27,7 @@ const MONKEY_FACE = `           __,__
 func Start(in io.Reader, out io.Writer) {
 	scanner := bufio.NewScanner(in)
 	env := object.NewEnvironment()
+	fmt.Fprint(out, MONKEY_FACE)
 
 	for {
 		fmt.Fprint(out, PROMPT)
@@ -52,7 +53,6 @@ func Start(in io.Reader, out io.Writer) {
 }
 
 func printParseErrors(out io.Writer, errors []string) {
-	fmt.Fprint(out, MONKEY_FACE)
 	fmt.Fprintln(out, "Woops! We ran into some monkey business here!")
 	fmt.Fprintln(out, " parse errors:")
 	for _, msg := range errors {
