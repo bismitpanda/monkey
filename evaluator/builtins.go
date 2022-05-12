@@ -13,6 +13,7 @@ var builtins = map[string]*object.Builtin{
 	"puts":    {Fn: builtinPuts},
 	"keys":    {Fn: builtinKeys},
 	"values":  {Fn: builtinValues},
+	"locals":  {Fn: builtinLocals},
 	"globals": {Fn: builtinGlobals},
 }
 
