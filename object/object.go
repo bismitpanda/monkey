@@ -9,7 +9,7 @@ import (
 )
 
 type ObjectType string
-type BuiltinFunction func(args ...Object) Object
+type BuiltinFunction func(env *Environment, args ...Object) Object
 
 const (
 	INTEGER_OBJ      = "INTEGER"
