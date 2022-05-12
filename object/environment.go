@@ -9,16 +9,16 @@ func NewLocalEnvironment(outer *Environment) *Environment {
 
 func NewEnvironment() *Environment {
 	s := make(map[string]Object)
-	return &Environment{store: s, Outer: nil}
+	return &Environment{Store: s, Outer: nil}
 }
 
 type Environment struct {
-	store map[string]Object
+	Store map[string]Object
 	Outer *Environment
 }
 
 func (e *Environment) Get(name string) (Object, bool) {
-	obj, ok := e.store[name]
+	obj, ok := e.Store[name]
 
 	if !ok && e.Outer != nil {
 		obj, ok = e.Outer.Get(name)
@@ -28,6 +28,6 @@ func (e *Environment) Get(name string) (Object, bool) {
 }
 
 func (e *Environment) Set(name string, val Object) Object {
-	e.store[name] = val
+	e.Store[name] = val
 	return val
 }
