@@ -279,7 +279,7 @@ func evalExpressions(exps []ast.Expression, env *object.Environment) []object.Ob
 	return result
 }
 
-func applyFunction(fn object.Object, env *Environment, args []object.Object) object.Object {
+func applyFunction(fn object.Object, env *object.Environment, args []object.Object) object.Object {
 	switch fn := fn.(type) {
 
 	case *object.Function:
