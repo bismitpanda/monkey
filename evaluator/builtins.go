@@ -15,7 +15,7 @@ var builtins = map[string]*object.Builtin{
 	"values": {Fn: builtinValues},
 }
 
-func builtinLen(args ...object.Object) object.Object {
+func builtinLen(env *Environment, args ...object.Object) object.Object {
 	if len(args) != 1 {
 		return newError("wrong number of arguments. got = %d, want = 1", len(args))
 	}
@@ -31,7 +31,7 @@ func builtinLen(args ...object.Object) object.Object {
 	return &object.Integer{Value: length}
 }
 
-func builtinPush(args ...object.Object) object.Object {
+func builtinPush(env *Environment, args ...object.Object) object.Object {
 	if len(args) != 2 {
 		return newError("wrong number of arguments. got = %d, want = 2", len(args))
 	}
@@ -51,7 +51,7 @@ func builtinPush(args ...object.Object) object.Object {
 
 }
 
-func builtinPuts(args ...object.Object) object.Object {
+func builtinPuts(env *Environment, args ...object.Object) object.Object {
 	for _, arg := range args {
 		fmt.Printf("%s ", arg.Inspect())
 	}
