@@ -16,7 +16,7 @@ var builtins = map[string]*object.Builtin{
 	"globals": {Fn: builtinGlobals},
 }
 
-func builtinLen(env *Environment, args ...object.Object) object.Object {
+func builtinLen(env *object.Environment, args ...object.Object) object.Object {
 	if len(args) != 1 {
 		return newError("wrong number of arguments. got = %d, want = 1", len(args))
 	}
@@ -32,7 +32,7 @@ func builtinLen(env *Environment, args ...object.Object) object.Object {
 	return &object.Integer{Value: length}
 }
 
-func builtinPush(env *Environment, args ...object.Object) object.Object {
+func builtinPush(env *object.Environment, args ...object.Object) object.Object {
 	if len(args) != 2 {
 		return newError("wrong number of arguments. got = %d, want = 2", len(args))
 	}
@@ -52,7 +52,7 @@ func builtinPush(env *Environment, args ...object.Object) object.Object {
 
 }
 
-func builtinPuts(env *Environment, args ...object.Object) object.Object {
+func builtinPuts(env *object.Environment, args ...object.Object) object.Object {
 	for _, arg := range args {
 		fmt.Printf("%s ", arg.Inspect())
 	}
@@ -60,7 +60,7 @@ func builtinPuts(env *Environment, args ...object.Object) object.Object {
 	return NULL
 }
 
-func builtinKeys(env *Environment, args ...object.Object) object.Object {
+func builtinKeys(env *object.Environment, args ...object.Object) object.Object {
 	if len(args) != 1 {
 		return newError("wrong number of arguments, got = %d, want = 1", len(args))
 	}
@@ -78,7 +78,7 @@ func builtinKeys(env *Environment, args ...object.Object) object.Object {
 	return &object.Array{Elements: keys}
 }
 
-func builtinValues(env *Environment, args ...object.Object) object.Object {
+func builtinValues(env *object.Environment, args ...object.Object) object.Object {
 	if len(args) != 1 {
 		return newError("wrong number of arguments, got = %d, want = 1", len(args))
 	}
@@ -96,7 +96,7 @@ func builtinValues(env *Environment, args ...object.Object) object.Object {
 	return &object.Array{Elements: values}
 }
 
-func builtinExit(env *Environment, args ...object.Object) object.Object {
+func builtinExit(env *object.Environment, args ...object.Object) object.Object {
 	if len(args) != 0 && len(args) != 1 {
 		return newError("wrong number of arguments. got = %d, want = 0 or 1", len(args))
 	}
@@ -118,20 +118,46 @@ func builtinExit(env *Environment, args ...object.Object) object.Object {
 	return NULL
 }
 
-func builtinGlobals(env *Environment, args ...object.Object) object.Object {
+func builtinGlobals(env *object.Environment, args ...object.Object) object.Object {
 	if len(args) != 0 {
 		return newError("the function globals doesnot take arguments. got = %d", len(args))
 	}
 	
-	if env.Outer != nil {
-		pairs := make(map[object.HashKey]object.HashPair)
-		for keys, values := range env.Outer.Store {
+	findGlobal := func(env *object.Environment) *object.Environment {
+		if env.Outer != nil {
+			return findGlobal(env.Outer)
+		} else {
+			return env
 		}
-		return &object.Hash{Pairs: pairs}
-	} else {
-		pairs := make(map[object.HashKey]object.HashPair)
-		for keys, values := range env.Outer.Store {
-		}
-		return &object.Hash{Pairs: pairs}
 	}
+	
+	globalEnv := findGlobal(env)
+	
+	pairs := make(map[object.HashKey]object.HashPair)
+	for key, value := range globalEnv.Store {
+		pairKey := &object.String{Value: key}
+		pairValue := value
+		pairs[pairKey.HashKey()] = object.HashPair{
+			Key:   pairKey,
+			Value: pairValue,
+		}
+	}
+	return &object.Hash{Pairs: pairs}
+}
+
+func builtinLocals(env *object.Environment, args ...object.Object) object.Object {
+	if len(args) != 0 {
+		return newError("the function globals doesnot take arguments. got = %d", len(args))
+	}
+	
+	pairs := make(map[object.HashKey]object.HashPair)
+	for key, value := range env.Store {
+		pairKey := &object.String{Value: key}
+		pairValue := value
+		pairs[pairKey.HashKey()] = object.HashPair{
+			Key:   pairKey,
+			Value: pairValue,
+		}
+	}
+	return &object.Hash{Pairs: pairs}
 }
