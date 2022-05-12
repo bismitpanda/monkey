@@ -7,12 +7,13 @@ import (
 )
 
 var builtins = map[string]*object.Builtin{
-	"len":    {Fn: builtinLen},
-	"exit":   {Fn: builtinExit},
-	"push":   {Fn: builtinPush},
-	"puts":   {Fn: builtinPuts},
-	"keys":   {Fn: builtinKeys},
-	"values": {Fn: builtinValues},
+	"len":     {Fn: builtinLen},
+	"exit":    {Fn: builtinExit},
+	"push":    {Fn: builtinPush},
+	"puts":    {Fn: builtinPuts},
+	"keys":    {Fn: builtinKeys},
+	"values":  {Fn: builtinValues},
+	"globals": {Fn: builtinGlobals},
 }
 
 func builtinLen(env *Environment, args ...object.Object) object.Object {
@@ -59,7 +60,7 @@ func builtinPuts(env *Environment, args ...object.Object) object.Object {
 	return NULL
 }
 
-func builtinKeys(args ...object.Object) object.Object {
+func builtinKeys(env *Environment, args ...object.Object) object.Object {
 	if len(args) != 1 {
 		return newError("wrong number of arguments, got = %d, want = 1", len(args))
 	}
@@ -77,7 +78,7 @@ func builtinKeys(args ...object.Object) object.Object {
 	return &object.Array{Elements: keys}
 }
 
-func builtinValues(args ...object.Object) object.Object {
+func builtinValues(env *Environment, args ...object.Object) object.Object {
 	if len(args) != 1 {
 		return newError("wrong number of arguments, got = %d, want = 1", len(args))
 	}
@@ -95,7 +96,7 @@ func builtinValues(args ...object.Object) object.Object {
 	return &object.Array{Elements: values}
 }
 
-func builtinExit(args ...object.Object) object.Object {
+func builtinExit(env *Environment, args ...object.Object) object.Object {
 	if len(args) != 0 && len(args) != 1 {
 		return newError("wrong number of arguments. got = %d, want = 0 or 1", len(args))
 	}
@@ -115,4 +116,22 @@ func builtinExit(args ...object.Object) object.Object {
 
 	os.Exit(exitCode)
 	return NULL
+}
+
+func builtinGlobals(env *Environment, args ...object.Object) object.Object {
+	if len(args) != 0 {
+		return newError("the function globals doesnot take arguments. got = %d", len(args))
+	}
+	
+	if env.Outer != nil {
+		pairs := make(map[object.HashKey]object.HashPair)
+		for keys, values := range env.Outer.Store {
+		}
+		return &object.Hash{Pairs: pairs}
+	} else {
+		pairs := make(map[object.HashKey]object.HashPair)
+		for keys, values := range env.Outer.Store {
+		}
+		return &object.Hash{Pairs: pairs}
+	}
 }
