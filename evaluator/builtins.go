@@ -125,8 +125,8 @@ func builtinGlobals(env *object.Environment, args ...object.Object) object.Objec
 	}
 	
 	findGlobal := func(env *object.Environment) *object.Environment {
-		if env.Outer != nil {
-			return findGlobal(env.Outer)
+		if env.Outer() != nil {
+			return findGlobal(env.Outer())
 		} else {
 			return env
 		}
@@ -135,7 +135,7 @@ func builtinGlobals(env *object.Environment, args ...object.Object) object.Objec
 	globalEnv := findGlobal(env)
 	
 	pairs := make(map[object.HashKey]object.HashPair)
-	for key, value := range globalEnv.Store {
+	for key, value := range globalEnv.Store() {
 		pairKey := &object.String{Value: key}
 		pairValue := value
 		pairs[pairKey.HashKey()] = object.HashPair{
@@ -152,7 +152,7 @@ func builtinLocals(env *object.Environment, args ...object.Object) object.Object
 	}
 	
 	pairs := make(map[object.HashKey]object.HashPair)
-	for key, value := range env.Store {
+	for key, value := range env.Store() {
 		pairKey := &object.String{Value: key}
 		pairValue := value
 		pairs[pairKey.HashKey()] = object.HashPair{
