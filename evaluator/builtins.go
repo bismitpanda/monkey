@@ -57,7 +57,7 @@ func builtinPuts(env *object.Environment, args ...object.Object) object.Object {
 	for _, arg := range args {
 		fmt.Printf("%s ", arg.Inspect())
 	}
-
+	fmt.Print("\n")
 	return NULL
 }
 
@@ -112,7 +112,7 @@ func builtinExit(env *object.Environment, args ...object.Object) object.Object {
 			return newError("invalid exit code. should be within %d to %d", 0, 125)
 		}
 	} else {
-		fmt.Printf("exit status 0")
+		fmt.Println("exit status 0")
 	}
 
 	os.Exit(exitCode)
@@ -124,7 +124,8 @@ func builtinGlobals(env *object.Environment, args ...object.Object) object.Objec
 		return newError("the function globals doesnot take arguments. got = %d", len(args))
 	}
 	
-	findGlobal := func(env *object.Environment) *object.Environment {
+	var findGlobal func(*object.Environment) *object.Environment
+	findGlobal = func(env *object.Environment) *object.Environment {
 		if env.Outer() != nil {
 			return findGlobal(env.Outer())
 		} else {
