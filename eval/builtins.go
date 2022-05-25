@@ -1,4 +1,4 @@
-package evaluator
+package eval
 
 import (
 	"fmt"
@@ -123,7 +123,7 @@ func builtinGlobals(env *object.Environment, args ...object.Object) object.Objec
 	if len(args) != 0 {
 		return newError("the function globals doesnot take arguments. got = %d", len(args))
 	}
-	
+
 	var findGlobal func(*object.Environment) *object.Environment
 	findGlobal = func(env *object.Environment) *object.Environment {
 		if env.Outer() != nil {
@@ -132,9 +132,9 @@ func builtinGlobals(env *object.Environment, args ...object.Object) object.Objec
 			return env
 		}
 	}
-	
+
 	globalEnv := findGlobal(env)
-	
+
 	pairs := make(map[object.HashKey]object.HashPair)
 	for key, value := range globalEnv.Store() {
 		pairKey := &object.String{Value: key}
@@ -151,7 +151,7 @@ func builtinLocals(env *object.Environment, args ...object.Object) object.Object
 	if len(args) != 0 {
 		return newError("the function globals doesnot take arguments. got = %d", len(args))
 	}
-	
+
 	pairs := make(map[object.HashKey]object.HashPair)
 	for key, value := range env.Store() {
 		pairKey := &object.String{Value: key}

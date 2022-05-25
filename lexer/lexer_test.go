@@ -25,6 +25,8 @@ if (5 < 10) {
 
 10 == 10
 10 != 9
+10 >= 10
+10 <= 10
 
 "foobar"
 "foo bar"
@@ -105,6 +107,12 @@ if (5 < 10) {
 		{token.INT, "10"},
 		{token.NOT_EQ, "!="},
 		{token.INT, "9"},
+		{token.INT, "10"},
+		{token.GT_EQ, ">="},
+		{token.INT, "10"},
+		{token.INT, "10"},
+		{token.LT_EQ, "<="},
+		{token.INT, "10"},
 		{token.STRING, "foobar"},
 		{token.STRING, "foo bar"},
 		{token.LBRACKET, "["},

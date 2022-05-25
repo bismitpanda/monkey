@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"io"
 
-	//"monkey/evaluator"
+	//"monkey/eval"
 	//"monkey/object"
 	"monkey/compiler"
 	"monkey/lexer"
@@ -48,7 +48,7 @@ func Start(in io.Reader, out io.Writer) {
 			continue
 		}
 
-		/*evaluated := evaluator.Eval(program, env)
+		/*evaluated := eval.Eval(program, env)
 		if evaluated != nil {
 			fmt.Fprintln(out, evaluated.Inspect())
 		}*/
@@ -65,7 +65,6 @@ func Start(in io.Reader, out io.Writer) {
 			continue
 		}
 
-		//stackTop := machine.StackTop()
 		lastPopped := machine.LastPoppedStackElem()
 		fmt.Fprintln(out, lastPopped.Inspect())
 	}

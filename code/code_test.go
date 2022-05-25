@@ -40,7 +40,7 @@ func TestInstructionString(t *testing.T) {
 	expected := `0000 OpAdd
 0001 OpConstant 2
 0004 OpConstant 65535
-0005 OpPop
+0007 OpPop
 `
 
 	concated := Instructions{}

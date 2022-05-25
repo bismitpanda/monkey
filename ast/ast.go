@@ -2,6 +2,7 @@ package ast
 
 import (
 	"bytes"
+	"fmt"
 	"monkey/token"
 	"strings"
 )
@@ -54,15 +55,7 @@ func (ls *LetStatement) TokenLiteral() string { return ls.Token.Literal }
 func (ls *LetStatement) String() string {
 	var out bytes.Buffer
 
-	out.WriteString(ls.TokenLiteral() + " ")
-	out.WriteString(ls.Name.String())
-	out.WriteString(" = ")
-
-	if ls.Value != nil {
-		out.WriteString(ls.Value.String())
-	}
-
-	out.WriteString(";")
+	out.WriteString(fmt.Sprintf("%s %s = %s;", ls.TokenLiteral(), ls.Name.String(), ls.Value.String()))
 
 	return out.String()
 }
@@ -154,9 +147,7 @@ func (al *ArrayLiteral) String() string {
 		elems = append(elems, elem.String())
 	}
 
-	out.WriteString("[")
-	out.WriteString(strings.Join(elems, ", "))
-	out.WriteString("]")
+	out.WriteString(fmt.Sprintf("[%s]", strings.Join(elems, ", ")))
 
 	return out.String()
 }
@@ -194,10 +185,7 @@ func (pe *PrefixExpression) TokenLiteral() string { return pe.Token.Literal }
 func (pe *PrefixExpression) String() string {
 	var out bytes.Buffer
 
-	out.WriteString("(")
-	out.WriteString(pe.Operator)
-	out.WriteString(pe.Right.String())
-	out.WriteString(")")
+	out.WriteString(fmt.Sprintf("(%s%s)", pe.Operator, pe.Right.String()))
 
 	return out.String()
 }
@@ -214,11 +202,7 @@ func (ie *InfixExpression) TokenLiteral() string { return ie.Token.Literal }
 func (ie *InfixExpression) String() string {
 	var out bytes.Buffer
 
-	out.WriteString("(")
-	out.WriteString(ie.Left.String())
-	out.WriteString(" " + ie.Operator + " ")
-	out.WriteString(ie.Right.String())
-	out.WriteString(")")
+	out.WriteString(fmt.Sprintf("(%s %s %s)", ie.Left.String(), ie.Operator, ie.Right.String()))
 
 	return out.String()
 }
@@ -240,14 +224,10 @@ func (ie *IfExpression) TokenLiteral() string { return ie.Token.Literal }
 func (ie *IfExpression) String() string {
 	var out bytes.Buffer
 
-	out.WriteString("if")
-	out.WriteString(ie.Condition.String())
-	out.WriteString(" ")
-	out.WriteString(ie.Consequence.String())
+	out.WriteString(fmt.Sprintf("if %s %s", ie.Condition.String(), ie.Consequence.String()))
 
 	if ie.Alternative != nil {
-		out.WriteString("else ")
-		out.WriteString(ie.Alternative.String())
+		out.WriteString(fmt.Sprintf("else %s", ie.Alternative.String()))
 	}
 
 	return out.String()

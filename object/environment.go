@@ -17,6 +17,11 @@ type Environment struct {
 	outer *Environment
 }
 
+func (e *Environment) Empty() {
+	e.store = nil
+	e.outer = nil
+}
+
 func (e *Environment) Get(name string) (Object, bool) {
 	obj, ok := e.store[name]
 
