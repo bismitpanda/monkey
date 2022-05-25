@@ -6,4 +6,3 @@ Changes:
 - added `exit()` function.
 - added `keys()` and `values()` for hash values.
 - added `globals()` and `locals()` functions to check environment.
-- removed `first()`, `last()` and `rest()` for array literals.
