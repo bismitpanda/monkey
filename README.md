@@ -1,8 +1,9 @@
 # THE MONKEY PROGRAMMING LANGUAGE
 
-The [monkey programming language](https://monkeylang.org/) interpreter from the book [Writing an Interpreter in Go](https://interpreterbook.com/) by Thorsten Ball.
+The [monkey programming language](https://monkeylang.org/) interpreter/compiler from the books [Writing an Interpreter in Go](https://interpreterbook.com/) and [Writing a Compiler in Go](https://compilerbook.com/) by Thorsten Ball.
 
 Changes:
 - added `exit()` function.
 - added `keys()` and `values()` for hash values.
+- added `globals()` and `locals()` functions to check environment.
 - removed `first()`, `last()` and `rest()` for array literals.

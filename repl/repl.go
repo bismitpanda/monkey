@@ -6,6 +6,7 @@ import (
 	"io"
 
 	//"monkey/evaluator"
+	//"monkey/object"
 	"monkey/compiler"
 	"monkey/lexer"
 	"monkey/parser"
@@ -64,8 +65,9 @@ func Start(in io.Reader, out io.Writer) {
 			continue
 		}
 
-		stackTop := machine.StackTop()
-		fmt.Fprintln(out, stackTop.Inspect())
+		//stackTop := machine.StackTop()
+		lastPopped := machine.LastPoppedStackElem()
+		fmt.Fprintln(out, lastPopped.Inspect())
 	}
 }
 
