@@ -45,6 +45,16 @@ func (vm *VM) Run() error {
 			if err := vm.push(vm.constants[constIdx]); err != nil {
 				return err
 			}
+
+		case code.OpAdd:
+			r := vm.pop()
+			l := vm.pop()
+
+			lValue := l.(*object.Integer).Value
+			rValue := r.(*object.Integer).Value
+
+			res := lValue + rValue
+			vm.push(&object.Integer{Value: res})
 		}
 	}
 
@@ -60,4 +70,11 @@ func (vm *VM) push(o object.Object) error {
 	vm.sp++
 
 	return nil
+}
+
+func (vm *VM) pop() object.Object {
+	o := vm.stack[vm.sp-1]
+	vm.sp--
+
+	return o
 }

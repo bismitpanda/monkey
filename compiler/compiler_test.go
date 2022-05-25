@@ -24,6 +24,7 @@ func TestIntegerArithmetic(t *testing.T) {
 			expectedInstructions: []code.Instructions{
 				code.Make(code.OpConstant, 0),
 				code.Make(code.OpConstant, 1),
+				code.Make(code.OpAdd),
 			},
 		},
 	}
@@ -108,12 +109,11 @@ func testConstants(expected []interface{}, actual []object.Object) error {
 func testIntegerObject(expected int64, actual object.Object) error {
 	result, ok := actual.(*object.Integer)
 	if !ok {
-		return fmt.Errorf("object is not Integer. got = %T (%+v)",
-			actual, actual)
+		return fmt.Errorf("object is not Integer. got = %T (%+v)", actual, actual)
 	}
+
 	if result.Value != expected {
-		return fmt.Errorf("object has wrong value. got = %d, want = %d",
-			result.Value, expected)
+		return fmt.Errorf("object has wrong value. got = %d, want = %d", result.Value, expected)
 	}
 	return nil
 }
