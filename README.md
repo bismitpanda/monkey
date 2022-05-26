@@ -6,3 +6,4 @@ Changes:
 - added `exit()` function.
 - added `keys()` and `values()` for hash values.
 - added `globals()` and `locals()` functions to check environment.
+- added `toInt()` and `toBool()` for type conversion.

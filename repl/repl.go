@@ -26,14 +26,11 @@ const MONKEY_FACE = `           __,__
           '-----'
 `
 
-func Start(in io.Reader, out io.Writer) {
+func StartCompiler(in io.Reader, out io.Writer) {
 	scanner := bufio.NewScanner(in)
-	//env := object.NewEnvironment()
 	constants := []object.Object{}
 	globals := make([]object.Object, vm.GlobalSize)
 	symbolTable := compiler.NewSymbolTable()
-
-	fmt.Fprint(out, MONKEY_FACE)
 
 	for {
 		fmt.Fprint(out, PROMPT)
@@ -75,7 +72,6 @@ func Start(in io.Reader, out io.Writer) {
 func StartInterpreter(in io.Reader, out io.Writer) {
 	scanner := bufio.NewScanner(in)
 	env := object.NewEnvironment()
-	fmt.Fprint(out, MONKEY_FACE)
 
 	for {
 		fmt.Fprint(out, PROMPT)
