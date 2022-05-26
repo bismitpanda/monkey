@@ -7,20 +7,22 @@ import (
 )
 
 var builtins = map[string]*object.Builtin{
-	"len":     {Fn: builtinLen},
-	"exit":    {Fn: builtinExit},
-	"push":    {Fn: builtinPush},
-	"last":    {Fn: builtinLast},
-	"rest":    {Fn: builtinRest},
-	"puts":    {Fn: builtinPuts},
-	"keys":    {Fn: builtinKeys},
-	"first":   {Fn: builtinFirst},
-	"values":  {Fn: builtinValues},
-	"locals":  {Fn: builtinLocals},
-	"globals": {Fn: builtinGlobals},
+	"len":     {Fn: bltnLen},
+	"exit":    {Fn: bltnExit},
+	"push":    {Fn: bltnPush},
+	"last":    {Fn: bltnLast},
+	"rest":    {Fn: bltnRest},
+	"puts":    {Fn: bltnPuts},
+	"keys":    {Fn: bltnKeys},
+	"first":   {Fn: bltnFirst},
+	"toInt":   {Fn: bltnToInt},
+	"values":  {Fn: bltnValues},
+	"toBool":  {Fn: bltnToBool},
+	"locals":  {Fn: bltnLocals},
+	"globals": {Fn: bltnGlobals},
 }
 
-func builtinLen(env *object.Environment, args ...object.Object) object.Object {
+func bltnLen(env *object.Environment, args ...object.Object) object.Object {
 	if len(args) != 1 {
 		return newError("wrong number of arguments. got = %d, want = 1", len(args))
 	}
@@ -36,7 +38,7 @@ func builtinLen(env *object.Environment, args ...object.Object) object.Object {
 	return &object.Integer{Value: length}
 }
 
-func builtinPush(env *object.Environment, args ...object.Object) object.Object {
+func bltnPush(env *object.Environment, args ...object.Object) object.Object {
 	if len(args) != 2 {
 		return newError("wrong number of arguments. got = %d, want = 2", len(args))
 	}
@@ -56,7 +58,7 @@ func builtinPush(env *object.Environment, args ...object.Object) object.Object {
 
 }
 
-func builtinFirst(env *object.Environment, args ...object.Object) object.Object {
+func bltnFirst(env *object.Environment, args ...object.Object) object.Object {
 	if len(args) != 1 {
 		return newError("wrong number of arguments. got=%d, want=1", len(args))
 	}
@@ -73,7 +75,7 @@ func builtinFirst(env *object.Environment, args ...object.Object) object.Object 
 	return NULL
 }
 
-func builtinLast(env *object.Environment, args ...object.Object) object.Object {
+func bltnLast(env *object.Environment, args ...object.Object) object.Object {
 	if len(args) != 1 {
 		return newError("wrong number of arguments. got=%d, want=1", len(args))
 	}
@@ -92,7 +94,7 @@ func builtinLast(env *object.Environment, args ...object.Object) object.Object {
 	return NULL
 }
 
-func builtinRest(env *object.Environment, args ...object.Object) object.Object {
+func bltnRest(env *object.Environment, args ...object.Object) object.Object {
 	if len(args) != 1 {
 		return newError("wrong number of arguments. got=%d, want=1", len(args))
 	}
@@ -113,7 +115,7 @@ func builtinRest(env *object.Environment, args ...object.Object) object.Object {
 	return NULL
 }
 
-func builtinPuts(env *object.Environment, args ...object.Object) object.Object {
+func bltnPuts(env *object.Environment, args ...object.Object) object.Object {
 	for _, arg := range args {
 		fmt.Printf("%s ", arg.Inspect())
 	}
@@ -121,7 +123,7 @@ func builtinPuts(env *object.Environment, args ...object.Object) object.Object {
 	return NULL
 }
 
-func builtinKeys(env *object.Environment, args ...object.Object) object.Object {
+func bltnKeys(env *object.Environment, args ...object.Object) object.Object {
 	if len(args) != 1 {
 		return newError("wrong number of arguments, got = %d, want = 1", len(args))
 	}
@@ -139,7 +141,7 @@ func builtinKeys(env *object.Environment, args ...object.Object) object.Object {
 	return &object.Array{Elements: keys}
 }
 
-func builtinValues(env *object.Environment, args ...object.Object) object.Object {
+func bltnValues(env *object.Environment, args ...object.Object) object.Object {
 	if len(args) != 1 {
 		return newError("wrong number of arguments, got = %d, want = 1", len(args))
 	}
@@ -157,7 +159,7 @@ func builtinValues(env *object.Environment, args ...object.Object) object.Object
 	return &object.Array{Elements: values}
 }
 
-func builtinExit(env *object.Environment, args ...object.Object) object.Object {
+func bltnExit(env *object.Environment, args ...object.Object) object.Object {
 	if len(args) != 0 && len(args) != 1 {
 		return newError("wrong number of arguments. got = %d, want = 0 or 1", len(args))
 	}
@@ -179,7 +181,7 @@ func builtinExit(env *object.Environment, args ...object.Object) object.Object {
 	return NULL
 }
 
-func builtinGlobals(env *object.Environment, args ...object.Object) object.Object {
+func bltnGlobals(env *object.Environment, args ...object.Object) object.Object {
 	if len(args) != 0 {
 		return newError("the function globals doesnot take arguments. got = %d", len(args))
 	}
@@ -207,7 +209,7 @@ func builtinGlobals(env *object.Environment, args ...object.Object) object.Objec
 	return &object.Hash{Pairs: pairs}
 }
 
-func builtinLocals(env *object.Environment, args ...object.Object) object.Object {
+func bltnLocals(env *object.Environment, args ...object.Object) object.Object {
 	if len(args) != 0 {
 		return newError("the function globals doesnot take arguments. got = %d", len(args))
 	}
@@ -222,4 +224,75 @@ func builtinLocals(env *object.Environment, args ...object.Object) object.Object
 		}
 	}
 	return &object.Hash{Pairs: pairs}
+}
+
+func bltnToInt(env *object.Environment, args ...object.Object) object.Object {
+	if len(args) != 1 {
+		return newError("wrong number of arguments. got = %d, want = 1", len(args))
+	}
+
+	var out int
+
+	switch arg := args[0].(type) {
+	case *object.Boolean:
+		if arg.Value {
+			out = 1
+		} else {
+			out = 0
+		}
+
+	case *object.Null:
+		out = 0
+	default:
+		return newError("invalid argument type. got %s", arg.Type())
+	}
+
+	return &object.Integer{Value: int64(out)}
+}
+
+func bltnToBool(env *object.Environment, args ...object.Object) object.Object {
+	if len(args) != 1 {
+		return newError("wrong number of arguments. got = %d, want = 1", len(args))
+	}
+
+	var out bool
+
+	switch arg := args[0].(type) {
+	case *object.Integer:
+		if arg.Value == 0 {
+			out = false
+		} else {
+			out = true
+		}
+	case *object.String:
+		if arg.Value == "" {
+			out = false
+		} else {
+			out = true
+		}
+	case *object.Boolean:
+		out = arg.Value
+	case *object.Array:
+		if len(arg.Elements) == 0 {
+			out = false
+		} else {
+			out = true
+		}
+	case *object.Hash:
+		if len(arg.Pairs) == 0 {
+			out = false
+		} else {
+			out = true
+		}
+	case *object.Null:
+		out = false
+	default:
+		return newError("invalid argument type. got %s", arg.Type())
+	}
+
+	if out {
+		return TRUE
+	} else {
+		return FALSE
+	}
 }

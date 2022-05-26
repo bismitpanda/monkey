@@ -4,9 +4,8 @@ import (
 	"bufio"
 	"fmt"
 	"io"
-
-	//"monkey/eval"
 	"monkey/compiler"
+	"monkey/eval"
 	"monkey/lexer"
 	"monkey/object"
 	"monkey/parser"
@@ -52,19 +51,6 @@ func Start(in io.Reader, out io.Writer) {
 			continue
 		}
 
-		//evaluated := eval.Eval(program, env)
-		//if evaluated != nil {
-		//	fmt.Fprintln(out, evaluated.Inspect())
-		//}
-
-		//comp := compiler.New()
-		//if err := comp.Compile(program); err != nil {
-		//	fmt.Fprintf(out, "Whoops! Compilation failed:\n %s\n", err)
-		//	continue
-		//}
-
-		//machine := vm.New(comp.Bytecode())*/
-
 		comp := compiler.NewWithState(symbolTable, constants)
 		if err := comp.Compile(program); err != nil {
 			fmt.Fprintf(out, "Woops! Compilation failed:\n %s\n", err)
@@ -77,12 +63,40 @@ func Start(in io.Reader, out io.Writer) {
 		machine := vm.NewWithGlobalsStore(code, globals)
 
 		if err := machine.Run(); err != nil {
-			fmt.Fprintf(out, "Whoo[s! Executing bytecode failed:\n %s \n", err)
+			fmt.Fprintf(out, "Woops! Executing bytecode failed:\n %s \n", err)
 			continue
 		}
 
 		lastPopped := machine.LastPoppedStackElem()
 		fmt.Fprintln(out, lastPopped.Inspect())
+	}
+}
+
+func StartInterpreter(in io.Reader, out io.Writer) {
+	scanner := bufio.NewScanner(in)
+	env := object.NewEnvironment()
+	fmt.Fprint(out, MONKEY_FACE)
+
+	for {
+		fmt.Fprint(out, PROMPT)
+		if scanned := scanner.Scan(); !scanned {
+			return
+		}
+
+		line := scanner.Text()
+		l := lexer.New(line)
+		p := parser.New(l)
+
+		program := p.ParseProgram()
+		if len(p.Errors()) != 0 {
+			printParseErrors(out, p.Errors())
+			continue
+		}
+
+		evaluated := eval.Eval(program, env)
+		if evaluated != nil {
+			fmt.Fprintln(out, evaluated.Inspect())
+		}
 	}
 }
 
