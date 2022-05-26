@@ -7,7 +7,10 @@ import (
 	"monkey/object"
 )
 
-const StackSize = 4096
+const (
+	StackSize  = 4096
+	GlobalSize = 65536
+)
 
 var (
 	True  = &object.Boolean{Value: true}
@@ -21,6 +24,8 @@ type VM struct {
 
 	stack []object.Object
 	sp    int
+
+	globals []object.Object
 }
 
 func New(bytecode *compiler.Bytecode) *VM {
@@ -29,7 +34,15 @@ func New(bytecode *compiler.Bytecode) *VM {
 		constants:    bytecode.Constants,
 		stack:        make([]object.Object, StackSize),
 		sp:           0,
+		globals:      make([]object.Object, GlobalSize),
 	}
+}
+
+func NewWithGlobalsStore(bytecode *compiler.Bytecode, s []object.Object) *VM {
+	vm := New(bytecode)
+	vm.globals = s
+
+	return vm
 }
 
 func (vm *VM) StackTop() object.Object {
@@ -104,6 +117,20 @@ func (vm *VM) Run() error {
 
 		case code.OpNull:
 			if err := vm.push(Null); err != nil {
+				return err
+			}
+
+		case code.OpSetGlobal:
+			globalIdx := code.ReadUint16(vm.instructions[ip+1:])
+			ip += 2
+
+			vm.globals[globalIdx] = vm.pop()
+
+		case code.OpGetGlobal:
+			globalIndex := code.ReadUint16(vm.instructions[ip+1:])
+			ip += 2
+
+			if err := vm.push(vm.globals[globalIndex]); err != nil {
 				return err
 			}
 		}

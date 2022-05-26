@@ -6,9 +6,9 @@ import (
 	"io"
 
 	//"monkey/eval"
-	//"monkey/object"
 	"monkey/compiler"
 	"monkey/lexer"
+	"monkey/object"
 	"monkey/parser"
 	"monkey/vm"
 )
@@ -30,6 +30,10 @@ const MONKEY_FACE = `           __,__
 func Start(in io.Reader, out io.Writer) {
 	scanner := bufio.NewScanner(in)
 	//env := object.NewEnvironment()
+	constants := []object.Object{}
+	globals := make([]object.Object, vm.GlobalSize)
+	symbolTable := compiler.NewSymbolTable()
+
 	fmt.Fprint(out, MONKEY_FACE)
 
 	for {
@@ -48,18 +52,30 @@ func Start(in io.Reader, out io.Writer) {
 			continue
 		}
 
-		/*evaluated := eval.Eval(program, env)
-		if evaluated != nil {
-			fmt.Fprintln(out, evaluated.Inspect())
-		}*/
+		//evaluated := eval.Eval(program, env)
+		//if evaluated != nil {
+		//	fmt.Fprintln(out, evaluated.Inspect())
+		//}
 
-		comp := compiler.New()
+		//comp := compiler.New()
+		//if err := comp.Compile(program); err != nil {
+		//	fmt.Fprintf(out, "Whoops! Compilation failed:\n %s\n", err)
+		//	continue
+		//}
+
+		//machine := vm.New(comp.Bytecode())*/
+
+		comp := compiler.NewWithState(symbolTable, constants)
 		if err := comp.Compile(program); err != nil {
-			fmt.Fprintf(out, "Whoops! Compilation failed:\n %s\n", err)
+			fmt.Fprintf(out, "Woops! Compilation failed:\n %s\n", err)
 			continue
 		}
 
-		machine := vm.New(comp.Bytecode())
+		code := comp.Bytecode()
+		constants = code.Constants
+
+		machine := vm.NewWithGlobalsStore(code, globals)
+
 		if err := machine.Run(); err != nil {
 			fmt.Fprintf(out, "Whoo[s! Executing bytecode failed:\n %s \n", err)
 			continue
