@@ -440,7 +440,6 @@ func TestCallingFunctionsWithArgumentsAndBindings(t *testing.T) {
 			c;
 			};
 			sum(1, 2);
-			211
 			`,
 			expected: 3,
 		},
@@ -489,15 +488,15 @@ func TestCallingFunctionsWithWrongArguments(t *testing.T) {
 	tests := []vmTestCase{
 		{
 			input:    `fn() { 1; }(1);`,
-			expected: `wrong number of arguments: want=0, got=1`,
+			expected: `wrong number of arguments: want = 0, got = 1`,
 		},
 		{
 			input:    `fn(a) { a; }();`,
-			expected: `wrong number of arguments: want=1, got=0`,
+			expected: `wrong number of arguments: want = 1, got = 0`,
 		},
 		{
 			input:    `fn(a, b) { a + b; }(1);`,
-			expected: `wrong number of arguments: want=2, got=1`,
+			expected: `wrong number of arguments: want = 2, got = 1`,
 		},
 	}
 
@@ -535,12 +534,11 @@ func TestBuiltinFunctions(t *testing.T) {
 		},
 		{`len("one", "two")`,
 			&object.Error{
-				Message: "wrong number of arguments. got=2, want=1",
+				Message: "wrong number of arguments. got = 2, want = 1",
 			},
 		},
 		{`len([1, 2, 3])`, 3},
 		{`len([])`, 0},
-		{`puts("hello", "world!")`, object.NULL},
 		{`first([1, 2, 3])`, 1},
 		{`first([])`, object.NULL},
 		{`first(1)`,
@@ -579,7 +577,122 @@ func TestClosures(t *testing.T) {
 	`,
 			expected: 99,
 		},
+		{
+			input: `
+			let newAdderOuter = fn(a, b) {
+			let c = a + b;
+			fn(d) {
+			let e = d + c;
+			fn(f) { e + f; };
+			};
+			};
+			let newAdderInner = newAdderOuter(1, 2)
+			let adder = newAdderInner(3);
+			adder(8);
+			`,
+			expected: 14,
+		},
+		{
+			input: `
+			let a = 1;
+			let newAdderOuter = fn(b) {
+			fn(c) {
+			fn(d) { a + b + c + d };
+			};
+			};
+			let newAdderInner = newAdderOuter(2)
+			let adder = newAdderInner(3);
+			adder(8);
+			`,
+			expected: 14,
+		},
+		{
+			input: `
+			let newClosure = fn(a, b) {
+			let one = fn() { a; };
+			let two = fn() { b; };
+			fn() { one() + two(); };
+			};
+			let closure = newClosure(9, 90);
+			closure();
+			`,
+			expected: 99,
+		},
 	}
 
+	runVmTests(t, tests)
+}
+
+func TestRecursiveFunctions(t *testing.T) {
+	tests := []vmTestCase{
+		{
+			input: `
+			let countDown = fn(x) {
+				if (x == 0) {
+					return 0;
+				} else {
+					countDown(x - 1);
+				}
+			};
+			countDown(1);`,
+			expected: 0,
+		},
+		{
+			input: `
+			let countDown = fn(x) {
+				if (x == 0) {
+					return 0;
+				} else {
+					countDown(x - 1);
+				}
+			};
+			let wrapper = fn() {
+				countDown(1);
+			};
+			wrapper();
+			`,
+			expected: 0,
+		},
+		{
+			input: `
+			let wrapper = fn() {
+				let countDown = fn(x) {
+					if (x == 0) {
+						return 0;
+					} else {
+						countDown(x - 1);
+					}
+				};
+				countDown(1);
+			};
+			wrapper();
+			`,
+			expected: 0,
+		},
+	}
+
+	runVmTests(t, tests)
+}
+
+func TestRecursiveFibonacci(t *testing.T) {
+	tests := []vmTestCase{
+		{
+			input: `
+	let fibonacci = fn(x) {
+		if (x == 0) {
+			return 0;
+		} else {
+			if (x == 1) {
+				return 1;
+			} else {
+				fibonacci(x - 1) + fibonacci(x - 2);
+			}
+		}
+	};
+	fibonacci(15);
+	`,
+			expected: 610,
+		},
+	}
 	runVmTests(t, tests)
 }
