@@ -74,12 +74,12 @@ func TestReadOperands(t *testing.T) {
 
 		operandsRead, n := ReadOperands(def, instruction[1:])
 		if n != tt.bytesRead {
-			t.Fatalf("n wrong. want=%d, got=%d", tt.bytesRead, n)
+			t.Fatalf("n wrong. want = %d, got = %d", tt.bytesRead, n)
 		}
 
 		for i, want := range tt.operands {
 			if operandsRead[i] != want {
-				t.Errorf("operand wrong. want=%d, got=%d", want, operandsRead[i])
+				t.Errorf("operand wrong. want = %d, got = %d", want, operandsRead[i])
 			}
 		}
 	}

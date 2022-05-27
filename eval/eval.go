@@ -6,12 +6,6 @@ import (
 	"monkey/object"
 )
 
-var (
-	TRUE  = &object.Boolean{Value: true}
-	FALSE = &object.Boolean{Value: false}
-	NULL  = &object.Null{}
-)
-
 func Eval(node ast.Node, env *object.Environment) object.Object {
 	switch node := node.(type) {
 	case *ast.Program:
@@ -100,9 +94,9 @@ func Eval(node ast.Node, env *object.Environment) object.Object {
 
 func nativeBoolToBooleanObject(input bool) *object.Boolean {
 	if input {
-		return TRUE
+		return object.TRUE
 	}
-	return FALSE
+	return object.FALSE
 }
 
 func newError(format string, a ...interface{}) *object.Error {
@@ -146,14 +140,14 @@ func evalPrefixExpression(operator string, right object.Object) object.Object {
 
 func evalBangOperatorExpression(right object.Object) object.Object {
 	switch right {
-	case TRUE:
-		return FALSE
-	case FALSE:
-		return TRUE
-	case NULL:
-		return TRUE
+	case object.TRUE:
+		return object.FALSE
+	case object.FALSE:
+		return object.TRUE
+	case object.NULL:
+		return object.TRUE
 	default:
-		return FALSE
+		return object.FALSE
 	}
 }
 
@@ -223,17 +217,17 @@ func evalIfExpression(ie *ast.IfExpression, env *object.Environment) object.Obje
 	} else if ie.Alternative != nil {
 		return Eval(ie.Alternative, env)
 	} else {
-		return NULL
+		return object.NULL
 	}
 }
 
 func isTruthy(obj object.Object) bool {
 	switch obj {
-	case NULL:
+	case object.NULL:
 		return false
-	case TRUE:
+	case object.TRUE:
 		return true
-	case FALSE:
+	case object.FALSE:
 		return false
 	default:
 		return true
@@ -291,7 +285,11 @@ func applyFunction(fn object.Object, env *object.Environment, args []object.Obje
 		evaluated := Eval(fn.Body, extendedEnv)
 		return unwrapReturnValue(evaluated)
 	case *object.Builtin:
-		return fn.Fn(env, args...)
+		if res := fn.Fn(env, args...); res != nil {
+			return res
+		}
+
+		return object.NULL
 	default:
 		return newError("not a function: %s", fn.Type())
 	}
@@ -345,7 +343,7 @@ func evalArrayIndexExpression(array, index object.Object) object.Object {
 	max := int64(len(arrayObject.Elements) - 1)
 
 	if idx < 0 || idx > max {
-		return NULL
+		return object.NULL
 	}
 	return arrayObject.Elements[idx]
 }
@@ -386,7 +384,7 @@ func evalHashIndexExpression(hash, index object.Object) object.Object {
 
 	pair, ok := hashObj.Pairs[key.HashKey()]
 	if !ok {
-		return NULL
+		return object.NULL
 	}
 
 	return pair.Value

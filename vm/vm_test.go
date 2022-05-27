@@ -33,11 +33,11 @@ func testIntegerObject(expected int64, actual object.Object) error {
 func testBooleanObject(expected bool, actual object.Object) error {
 	result, ok := actual.(*object.Boolean)
 	if !ok {
-		return fmt.Errorf("object is not Boolean. got=%T (%+v)",
+		return fmt.Errorf("object is not Boolean. got = %T (%+v)",
 			actual, actual)
 	}
 	if result.Value != expected {
-		return fmt.Errorf("object has wrong value. got=%t, want=%t",
+		return fmt.Errorf("object has wrong value. got = %t, want = %t",
 			result.Value, expected)
 	}
 	return nil
@@ -46,11 +46,11 @@ func testBooleanObject(expected bool, actual object.Object) error {
 func testStringObject(expected string, actual object.Object) error {
 	result, ok := actual.(*object.String)
 	if !ok {
-		return fmt.Errorf("object is not String. got=%T (%+v)", actual, actual)
+		return fmt.Errorf("object is not String. got = %T (%+v)", actual, actual)
 	}
 
 	if result.Value != expected {
-		return fmt.Errorf("object has wrong value. got=%q, want=%q", result.Value, expected)
+		return fmt.Errorf("object has wrong value. got = %q, want = %q", result.Value, expected)
 	}
 
 	return nil
@@ -98,8 +98,8 @@ func testExpectedObject(t *testing.T, expected interface{}, actual object.Object
 		}
 
 	case *object.Null:
-		if actual != Null {
-			t.Errorf("object is not Null %T (%+v)", actual, actual)
+		if actual != object.NULL {
+			t.Errorf("object is not object.NULL %T (%+v)", actual, actual)
 		}
 
 	case string:
@@ -115,7 +115,7 @@ func testExpectedObject(t *testing.T, expected interface{}, actual object.Object
 		}
 
 		if len(array.Elements) != len(expected) {
-			t.Errorf("wrong num of elements. want=%d, got=%d", len(expected), len(array.Elements))
+			t.Errorf("wrong num of elements. want = %d, got = %d", len(expected), len(array.Elements))
 			return
 		}
 		for i, expectedElem := range expected {
@@ -127,12 +127,12 @@ func testExpectedObject(t *testing.T, expected interface{}, actual object.Object
 	case map[object.HashKey]int64:
 		hash, ok := actual.(*object.Hash)
 		if !ok {
-			t.Errorf("object is not Hash. got=%T (%+v)", actual, actual)
+			t.Errorf("object is not Hash. got = %T (%+v)", actual, actual)
 			return
 		}
 
 		if len(hash.Pairs) != len(expected) {
-			t.Errorf("hash has wrong number of Pairs. want=%d, got=%d", len(expected), len(hash.Pairs))
+			t.Errorf("hash has wrong number of Pairs. want = %d, got = %d", len(expected), len(hash.Pairs))
 			return
 		}
 
@@ -214,8 +214,8 @@ func TestConditionals(t *testing.T) {
 		{"if (1 < 2) { 10 }", 10},
 		{"if (1 < 2) { 10 } else { 20 }", 10},
 		{"if (1 > 2) { 10 } else { 20 }", 20},
-		{"if (1 > 2) { 10 }", Null},
-		{"if (false) { 10 }", Null},
+		{"if (1 > 2) { 10 }", object.NULL},
+		{"if (false) { 10 }", object.NULL},
 		{"if ((if (false) { 10 })) { 10 } else { 20 }", 20},
 	}
 
@@ -281,13 +281,13 @@ func TestIndexExpressions(t *testing.T) {
 		{"[1, 2, 3][1]", 2},
 		{"[1, 2, 3][0 + 2]", 3},
 		{"[[1, 1, 1]][0][0]", 1},
-		{"[][0]", Null},
-		{"[1, 2, 3][99]", Null},
-		{"[1][-1]", Null},
+		{"[][0]", object.NULL},
+		{"[1, 2, 3][99]", object.NULL},
+		{"[1][-1]", object.NULL},
 		{"{1: 1, 2: 2}[1]", 1},
 		{"{1: 1, 2: 2}[2]", 2},
-		{"{1: 1}[0]", Null},
-		{"{}[0]", Null},
+		{"{1: 1}[0]", object.NULL},
+		{"{}[0]", object.NULL},
 	}
 
 	runVmTests(t, tests)
@@ -331,11 +331,11 @@ func TestFunctionsWithoutReturnValue(t *testing.T) {
 	tests := []vmTestCase{
 		{
 			input:    `let noReturn = fn() { }; noReturn();`,
-			expected: Null,
+			expected: object.NULL,
 		},
 		{
 			input:    `let noReturn = fn() { }; let noReturnTwo = fn() { noReturn(); }; noReturn(); noReturnTwo();`,
-			expected: Null,
+			expected: object.NULL,
 		},
 	}
 
@@ -403,4 +403,109 @@ func TestCallingFunctionsWithBindings(t *testing.T) {
 	}
 
 	runVmTests(t, tests)
+}
+
+func TestCallingFunctionsWithArgumentsAndBindings(t *testing.T) {
+	tests := []vmTestCase{
+		{
+			input: `
+			let identity = fn(a) { a; };
+			identity(4);
+			`,
+			expected: 4,
+		},
+		{
+			input: `
+			let sum = fn(a, b) { a + b; };
+			sum(1, 2);
+			`,
+			expected: 3,
+		},
+		{
+			input: `
+			let sum = fn(a, b) {
+			let c = a + b;
+			c;
+			};
+			sum(1, 2);
+			211
+			`,
+			expected: 3,
+		},
+		{
+			input: `
+			let sum = fn(a, b) {
+			let c = a + b;
+			c;
+			};
+			sum(1, 2) + sum(3, 4);`,
+			expected: 10,
+		},
+		{
+			input: `
+			let sum = fn(a, b) {
+			let c = a + b;
+			c;
+			};
+			let outer = fn() {
+			sum(1, 2) + sum(3, 4);
+			};
+			outer();
+			`,
+			expected: 10,
+		},
+		{
+			input: `
+			let globalNum = 10;
+			let sum = fn(a, b) {
+			let c = a + b;
+			c + globalNum;
+			};
+			let outer = fn() {
+			sum(1, 2) + sum(3, 4) + globalNum;
+			};
+			outer() + globalNum;
+			`,
+			expected: 50,
+		},
+	}
+
+	runVmTests(t, tests)
+}
+
+func TestCallingFunctionsWithWrongArguments(t *testing.T) {
+	tests := []vmTestCase{
+		{
+			input:    `fn() { 1; }(1);`,
+			expected: `wrong number of arguments: want=0, got=1`,
+		},
+		{
+			input:    `fn(a) { a; }();`,
+			expected: `wrong number of arguments: want=1, got=0`,
+		},
+		{
+			input:    `fn(a, b) { a + b; }(1);`,
+			expected: `wrong number of arguments: want=2, got=1`,
+		},
+	}
+
+	for _, tt := range tests {
+		program := parse(tt.input)
+
+		comp := compiler.New()
+		if err := comp.Compile(program); err != nil {
+			t.Fatalf("compiler error: %s", err)
+		}
+
+		vm := New(comp.Bytecode())
+
+		err := vm.Run()
+		if err == nil {
+			t.Fatalf("expected VM error but resulted in none.")
+		}
+
+		if err.Error() != tt.expected {
+			t.Fatalf("wrong VM error: want = %q, got = %q", tt.expected, err)
+		}
+	}
 }

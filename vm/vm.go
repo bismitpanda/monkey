@@ -13,12 +13,6 @@ const (
 	MaxFrames  = 1024
 )
 
-var (
-	True  = &object.Boolean{Value: true}
-	False = &object.Boolean{Value: false}
-	Null  = &object.Null{}
-)
-
 type VM struct {
 	constants []object.Object
 
@@ -96,12 +90,12 @@ func (vm *VM) Run() error {
 			vm.pop()
 
 		case code.OpTrue:
-			if err := vm.push(True); err != nil {
+			if err := vm.push(object.TRUE); err != nil {
 				return err
 			}
 
 		case code.OpFalse:
-			if err := vm.push(False); err != nil {
+			if err := vm.push(object.FALSE); err != nil {
 				return err
 			}
 
@@ -134,7 +128,7 @@ func (vm *VM) Run() error {
 			}
 
 		case code.OpNull:
-			if err := vm.push(Null); err != nil {
+			if err := vm.push(object.NULL); err != nil {
 				return err
 			}
 
@@ -187,14 +181,12 @@ func (vm *VM) Run() error {
 			}
 
 		case code.OpCall:
-			fn, ok := vm.stack[vm.sp-1].(*object.CompiledFunction)
-			if !ok {
-				return fmt.Errorf("calling non-function")
-			}
+			numArgs := code.ReadUint8(ins[ip+1:])
+			vm.currentFrame().ip++
 
-			frame := NewFrame(fn, vm.sp)
-			vm.pushFrame(frame)
-			vm.sp = frame.bp + fn.NumLocals
+			if err := vm.callFunction(int(numArgs)); err != nil {
+				return err
+			}
 
 		case code.OpReturnValue:
 			retVal := vm.pop()
@@ -210,7 +202,7 @@ func (vm *VM) Run() error {
 			frame := vm.popFrame()
 			vm.sp = frame.bp - 1
 
-			if err := vm.push(Null); err != nil {
+			if err := vm.push(object.NULL); err != nil {
 				return err
 			}
 
@@ -347,14 +339,14 @@ func (vm *VM) executeBangOperator() error {
 	operand := vm.pop()
 
 	switch operand {
-	case True:
-		return vm.push(False)
-	case False:
-		return vm.push(True)
-	case Null:
-		return vm.push(True)
+	case object.TRUE:
+		return vm.push(object.FALSE)
+	case object.FALSE:
+		return vm.push(object.TRUE)
+	case object.NULL:
+		return vm.push(object.TRUE)
 	default:
-		return vm.push(False)
+		return vm.push(object.FALSE)
 	}
 }
 
@@ -415,7 +407,7 @@ func (vm *VM) executeArrayIndex(array, index object.Object) error {
 	max := int64(len(arrayObject.Elements) - 1)
 
 	if i < 0 || i > max {
-		return vm.push(Null)
+		return vm.push(object.NULL)
 	}
 
 	return vm.push(arrayObject.Elements[i])
@@ -431,7 +423,7 @@ func (vm *VM) executeHashIndex(hash, index object.Object) error {
 
 	pair, ok := hashObject.Pairs[key.HashKey()]
 	if !ok {
-		return vm.push(Null)
+		return vm.push(object.NULL)
 	}
 
 	return vm.push(pair.Value)
@@ -449,11 +441,29 @@ func (vm *VM) popFrame() *Frame {
 	return vm.frames[vm.framesIdx]
 }
 
+func (vm *VM) callFunction(numArgs int) error {
+	fn, ok := vm.stack[vm.sp-1-numArgs].(*object.CompiledFunction)
+	if !ok {
+		return fmt.Errorf("calling non-function")
+	}
+
+	if numArgs != fn.NumParams {
+		return fmt.Errorf("wrong number of arguments: want = %d, got = %d", fn.NumParams, numArgs)
+	}
+
+	frame := NewFrame(fn, vm.sp-numArgs)
+	vm.pushFrame(frame)
+
+	vm.sp = frame.bp + fn.NumLocals
+
+	return nil
+}
+
 func nativeBoolToBooleanObject(input bool) *object.Boolean {
 	if input {
-		return True
+		return object.TRUE
 	}
-	return False
+	return object.FALSE
 }
 
 func isTruthy(obj object.Object) bool {

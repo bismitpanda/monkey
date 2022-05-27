@@ -12,6 +12,12 @@ import (
 type ObjectType string
 type BuiltinFunction func(env *Environment, args ...Object) Object
 
+var (
+	TRUE  = &Boolean{Value: true}
+	FALSE = &Boolean{Value: false}
+	NULL  = &Null{}
+)
+
 const (
 	INTEGER_OBJ           = "INTEGER"
 	BOOLEAN_OBJ           = "BOOLEAN"
@@ -180,6 +186,7 @@ func (h *Hash) Inspect() string {
 type CompiledFunction struct {
 	Instructions code.Instructions
 	NumLocals    int
+	NumParams    int
 }
 
 func (*CompiledFunction) Type() ObjectType { return COMPILED_FUNCTION_OBJ }

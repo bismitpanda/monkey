@@ -186,11 +186,11 @@ func testIntegerObject(expected int64, actual object.Object) error {
 func testStringObject(expected string, actual object.Object) error {
 	result, ok := actual.(*object.String)
 	if !ok {
-		return fmt.Errorf("object is not String. got=%T (%+v)", actual, actual)
+		return fmt.Errorf("object is not String. got = %T (%+v)", actual, actual)
 	}
 
 	if result.Value != expected {
-		return fmt.Errorf("object has wrong value. got=%q, want=%q", result.Value, expected)
+		return fmt.Errorf("object has wrong value. got = %q, want = %q", result.Value, expected)
 	}
 
 	return nil
@@ -572,49 +572,49 @@ func TestCompilerScopes(t *testing.T) {
 	compiler := New()
 
 	if compiler.scopeIdx != 0 {
-		t.Errorf("scopeIdx wrong. got=%d, want=%d", compiler.scopeIdx, 0)
+		t.Errorf("scopeIdx wrong. got = %d, want = %d", compiler.scopeIdx, 0)
 	}
 
 	compiler.emit(code.OpMul)
 	compiler.enterScope()
 
 	if compiler.scopeIdx != 1 {
-		t.Errorf("scopeIdx wrong. got=%d, want=%d", compiler.scopeIdx, 1)
+		t.Errorf("scopeIdx wrong. got = %d, want = %d", compiler.scopeIdx, 1)
 	}
 
 	compiler.emit(code.OpSub)
 
 	if len(compiler.scopes[compiler.scopeIdx].instructions) != 1 {
-		t.Errorf("instructions length wrong. got=%d", len(compiler.scopes[compiler.scopeIdx].instructions))
+		t.Errorf("instructions length wrong. got = %d", len(compiler.scopes[compiler.scopeIdx].instructions))
 	}
 
 	last := compiler.scopes[compiler.scopeIdx].lastInstruction
 	if last.Opcode != code.OpSub {
-		t.Errorf("lastInstruction.Opcode wrong. got=%d, want=%d", last.Opcode, code.OpSub)
+		t.Errorf("lastInstruction.Opcode wrong. got = %d, want = %d", last.Opcode, code.OpSub)
 	}
 
 	compiler.leaveScope()
 
 	if compiler.scopeIdx != 0 {
-		t.Errorf("scopeIdx wrong. got=%d, want=%d", compiler.scopeIdx, 0)
+		t.Errorf("scopeIdx wrong. got = %d, want = %d", compiler.scopeIdx, 0)
 	}
 
 	compiler.emit(code.OpAdd)
 
 	if len(compiler.scopes[compiler.scopeIdx].instructions) != 2 {
-		t.Errorf("instructions length wrong. got=%d", len(compiler.scopes[compiler.scopeIdx].instructions))
+		t.Errorf("instructions length wrong. got = %d", len(compiler.scopes[compiler.scopeIdx].instructions))
 	}
 
 	last = compiler.scopes[compiler.scopeIdx].lastInstruction
 
 	if last.Opcode != code.OpAdd {
-		t.Errorf("lastInstruction.Opcode wrong. got=%d, want=%d", last.Opcode, code.OpAdd)
+		t.Errorf("lastInstruction.Opcode wrong. got = %d, want = %d", last.Opcode, code.OpAdd)
 	}
 
 	previous := compiler.scopes[compiler.scopeIdx].prevInstruction
 
 	if previous.Opcode != code.OpMul {
-		t.Errorf("previousInstruction.Opcode wrong. got=%d, want=%d", previous.Opcode, code.OpMul)
+		t.Errorf("previousInstruction.Opcode wrong. got = %d, want = %d", previous.Opcode, code.OpMul)
 	}
 }
 
@@ -650,7 +650,7 @@ func TestFunctionCalls(t *testing.T) {
 			},
 			expectedInstructions: []code.Instructions{
 				code.Make(code.OpConstant, 1),
-				code.Make(code.OpCall),
+				code.Make(code.OpCall, 0),
 				code.Make(code.OpPop),
 			},
 		},
@@ -667,7 +667,101 @@ func TestFunctionCalls(t *testing.T) {
 				code.Make(code.OpConstant, 1),
 				code.Make(code.OpSetGlobal, 0),
 				code.Make(code.OpGetGlobal, 0),
-				code.Make(code.OpCall),
+				code.Make(code.OpCall, 0),
+				code.Make(code.OpPop),
+			},
+		},
+		{
+			input: `
+			let oneArg = fn(a) { };
+			oneArg(24);
+			`,
+			expectedConstants: []interface{}{
+				[]code.Instructions{
+					code.Make(code.OpReturn),
+				},
+				24,
+			},
+			expectedInstructions: []code.Instructions{
+				code.Make(code.OpConstant, 0),
+				code.Make(code.OpSetGlobal, 0),
+				code.Make(code.OpGetGlobal, 0),
+				code.Make(code.OpConstant, 1),
+				code.Make(code.OpCall, 1),
+				code.Make(code.OpPop),
+			},
+		},
+		{
+			input: `
+			let manyArg = fn(a, b, c) { };
+			manyArg(24, 25, 26);
+			`,
+			expectedConstants: []interface{}{
+				[]code.Instructions{
+					code.Make(code.OpReturn),
+				},
+				24,
+				25,
+				26,
+			},
+			expectedInstructions: []code.Instructions{
+				code.Make(code.OpConstant, 0),
+				code.Make(code.OpSetGlobal, 0),
+				code.Make(code.OpGetGlobal, 0),
+				code.Make(code.OpConstant, 1),
+				code.Make(code.OpConstant, 2),
+				code.Make(code.OpConstant, 3),
+				code.Make(code.OpCall, 3),
+				code.Make(code.OpPop),
+			},
+		},
+		{
+			input: `
+			let oneArg = fn(a) { a };
+			oneArg(24);
+			`,
+			expectedConstants: []interface{}{
+				[]code.Instructions{
+					code.Make(code.OpGetLocal, 0),
+					code.Make(code.OpReturnValue),
+				},
+				24,
+			},
+			expectedInstructions: []code.Instructions{
+				code.Make(code.OpConstant, 0),
+				code.Make(code.OpSetGlobal, 0),
+				code.Make(code.OpGetGlobal, 0),
+				code.Make(code.OpConstant, 1),
+				code.Make(code.OpCall, 1),
+				code.Make(code.OpPop),
+			},
+		},
+		{
+			input: `
+			let manyArg = fn(a, b, c) { a; b; c };
+			manyArg(24, 25, 26);
+			`,
+			expectedConstants: []interface{}{
+				[]code.Instructions{
+					code.Make(code.OpGetLocal, 0),
+					code.Make(code.OpPop),
+					code.Make(code.OpGetLocal, 1),
+					code.Make(code.OpPop),
+					code.Make(code.OpGetLocal, 2),
+					code.Make(code.OpReturnValue),
+				},
+				24,
+				25,
+				26,
+			},
+			expectedInstructions: []code.Instructions{
+				code.Make(code.OpConstant, 0),
+				code.Make(code.OpSetGlobal, 0),
+				code.Make(code.OpGetGlobal, 0),
+				code.Make(code.OpConstant, 1),
+				code.Make(code.OpConstant, 2),
+				code.Make(code.OpConstant, 3),
+				code.Make(code.OpCall, 3),
 				code.Make(code.OpPop),
 			},
 		},
@@ -753,7 +847,7 @@ func TestLetStatementScopes(t *testing.T) {
 func TestCompilerScopesLocal(t *testing.T) {
 	compiler := New()
 	if compiler.scopeIdx != 0 {
-		t.Errorf("scopeIdx wrong. got=%d, want=%d", compiler.scopeIdx, 0)
+		t.Errorf("scopeIdx wrong. got = %d, want = %d", compiler.scopeIdx, 0)
 	}
 
 	globalSymbolTable := compiler.symbolTable
@@ -762,18 +856,18 @@ func TestCompilerScopesLocal(t *testing.T) {
 	compiler.enterScope()
 
 	if compiler.scopeIdx != 1 {
-		t.Errorf("scopeIdx wrong. got=%d, want=%d", compiler.scopeIdx, 1)
+		t.Errorf("scopeIdx wrong. got = %d, want = %d", compiler.scopeIdx, 1)
 	}
 
 	compiler.emit(code.OpSub)
 
 	if len(compiler.scopes[compiler.scopeIdx].instructions) != 1 {
-		t.Errorf("instructions length wrong. got=%d", len(compiler.scopes[compiler.scopeIdx].instructions))
+		t.Errorf("instructions length wrong. got = %d", len(compiler.scopes[compiler.scopeIdx].instructions))
 	}
 
 	last := compiler.scopes[compiler.scopeIdx].lastInstruction
 	if last.Opcode != code.OpSub {
-		t.Errorf("lastInstruction.Opcode wrong. got=%d, want=%d", last.Opcode, code.OpSub)
+		t.Errorf("lastInstruction.Opcode wrong. got = %d, want = %d", last.Opcode, code.OpSub)
 	}
 
 	if compiler.symbolTable.Outer != globalSymbolTable {
@@ -783,7 +877,7 @@ func TestCompilerScopesLocal(t *testing.T) {
 	compiler.leaveScope()
 
 	if compiler.scopeIdx != 0 {
-		t.Errorf("scopeIdx wrong. got=%d, want=%d", compiler.scopeIdx, 0)
+		t.Errorf("scopeIdx wrong. got = %d, want = %d", compiler.scopeIdx, 0)
 	}
 
 	if compiler.symbolTable != globalSymbolTable {
@@ -797,18 +891,18 @@ func TestCompilerScopesLocal(t *testing.T) {
 	compiler.emit(code.OpAdd)
 
 	if len(compiler.scopes[compiler.scopeIdx].instructions) != 2 {
-		t.Errorf("instructions length wrong. got=%d", len(compiler.scopes[compiler.scopeIdx].instructions))
+		t.Errorf("instructions length wrong. got = %d", len(compiler.scopes[compiler.scopeIdx].instructions))
 	}
 
 	last = compiler.scopes[compiler.scopeIdx].lastInstruction
 
 	if last.Opcode != code.OpAdd {
-		t.Errorf("lastInstruction.Opcode wrong. got=%d, want=%d", last.Opcode, code.OpAdd)
+		t.Errorf("lastInstruction.Opcode wrong. got = %d, want = %d", last.Opcode, code.OpAdd)
 	}
 
 	previous := compiler.scopes[compiler.scopeIdx].prevInstruction
 
 	if previous.Opcode != code.OpMul {
-		t.Errorf("previousInstruction.Opcode wrong. got=%d, want=%d", previous.Opcode, code.OpMul)
+		t.Errorf("previousInstruction.Opcode wrong. got = %d, want = %d", previous.Opcode, code.OpMul)
 	}
 }
