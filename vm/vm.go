@@ -27,7 +27,8 @@ type VM struct {
 
 func New(bytecode *compiler.Bytecode) *VM {
 	mainFn := &object.CompiledFunction{Instructions: bytecode.Instructions}
-	mainFrame := NewFrame(mainFn, 0)
+	mainClosure := &object.Closure{Fn: mainFn}
+	mainFrame := NewFrame(mainClosure, 0)
 
 	frames := make([]*Frame, MaxFrames)
 	frames[0] = mainFrame
@@ -42,7 +43,7 @@ func New(bytecode *compiler.Bytecode) *VM {
 	}
 }
 
-func NewWithGlobalsStore(bytecode *compiler.Bytecode, s []object.Object) *VM {
+func NewWithGlobalStore(bytecode *compiler.Bytecode, s []object.Object) *VM {
 	vm := New(bytecode)
 	vm.globals = s
 
@@ -184,7 +185,7 @@ func (vm *VM) Run() error {
 			numArgs := code.ReadUint8(ins[ip+1:])
 			vm.currentFrame().ip++
 
-			if err := vm.callFunction(int(numArgs)); err != nil {
+			if err := vm.executeCall(int(numArgs)); err != nil {
 				return err
 			}
 
@@ -220,6 +221,25 @@ func (vm *VM) Run() error {
 
 			frame := vm.currentFrame()
 			if err := vm.push(vm.stack[frame.bp+int(localIndex)]); err != nil {
+				return err
+			}
+
+		case code.OpGetBuiltin:
+			bltnIdx := code.ReadUint8(ins[ip+1:])
+			vm.currentFrame().ip++
+
+			def := object.Builtins[bltnIdx]
+
+			if err := vm.push(def.Builtin); err != nil {
+				return err
+			}
+
+		case code.OpClosure:
+			constIdx := code.ReadUint16(ins[ip+1:])
+			_ = code.ReadUint8(ins[ip+3:])
+			vm.currentFrame().ip += 3
+
+			if err := vm.pushClosure(int(constIdx)); err != nil {
 				return err
 			}
 		}
@@ -441,22 +461,56 @@ func (vm *VM) popFrame() *Frame {
 	return vm.frames[vm.framesIdx]
 }
 
-func (vm *VM) callFunction(numArgs int) error {
-	fn, ok := vm.stack[vm.sp-1-numArgs].(*object.CompiledFunction)
-	if !ok {
-		return fmt.Errorf("calling non-function")
+func (vm *VM) executeCall(numArgs int) error {
+	callee := vm.stack[vm.sp-1-numArgs]
+	switch callee := callee.(type) {
+	case *object.Closure:
+		return vm.callClosure(callee, numArgs)
+	case *object.Builtin:
+		return vm.callBuiltin(callee, numArgs)
+	default:
+		return fmt.Errorf("calling non-function and non-built-in")
+	}
+}
+
+func (vm *VM) callClosure(cl *object.Closure, numArgs int) error {
+	if numArgs != cl.Fn.NumParams {
+		return fmt.Errorf("wrong number of arguments: want = %d, got = %d", cl.Fn.NumParams, numArgs)
 	}
 
-	if numArgs != fn.NumParams {
-		return fmt.Errorf("wrong number of arguments: want = %d, got = %d", fn.NumParams, numArgs)
-	}
-
-	frame := NewFrame(fn, vm.sp-numArgs)
+	frame := NewFrame(cl, vm.sp-numArgs)
 	vm.pushFrame(frame)
 
-	vm.sp = frame.bp + fn.NumLocals
+	vm.sp = frame.bp + cl.Fn.NumLocals
 
 	return nil
+}
+
+func (vm *VM) callBuiltin(builtin *object.Builtin, numArgs int) error {
+	args := vm.stack[vm.sp-numArgs : vm.sp]
+	env := object.NewEnvironment()
+
+	result := builtin.Fn(env, args...)
+	vm.sp = vm.sp - numArgs - 1
+	if result != nil {
+		vm.push(result)
+	} else {
+		vm.push(object.NULL)
+	}
+	return nil
+}
+
+func (vm *VM) pushClosure(constIndex int) error {
+	constant := vm.constants[constIndex]
+
+	function, ok := constant.(*object.CompiledFunction)
+	if !ok {
+		return fmt.Errorf("not a function: %+v", constant)
+	}
+
+	closure := &object.Closure{Fn: function}
+
+	return vm.push(closure)
 }
 
 func nativeBoolToBooleanObject(input bool) *object.Boolean {

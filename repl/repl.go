@@ -28,9 +28,14 @@ const MONKEY_FACE = `           __,__
 
 func StartCompiler(in io.Reader, out io.Writer) {
 	scanner := bufio.NewScanner(in)
+
 	constants := []object.Object{}
 	globals := make([]object.Object, vm.GlobalSize)
+
 	symbolTable := compiler.NewSymbolTable()
+	for i, v := range object.Builtins {
+		symbolTable.DefineBuiltin(i, v.Name)
+	}
 
 	for {
 		fmt.Fprint(out, PROMPT)
@@ -57,7 +62,7 @@ func StartCompiler(in io.Reader, out io.Writer) {
 		code := comp.Bytecode()
 		constants = code.Constants
 
-		machine := vm.NewWithGlobalsStore(code, globals)
+		machine := vm.NewWithGlobalStore(code, globals)
 
 		if err := machine.Run(); err != nil {
 			fmt.Fprintf(out, "Woops! Executing bytecode failed:\n %s \n", err)

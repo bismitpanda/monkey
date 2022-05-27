@@ -8,8 +8,6 @@ import (
 	"sort"
 )
 
-type CompilerBuiltinFunction func(symTable *SymbolTable, args ...object.Object) object.Object
-
 type EmittedInstruction struct {
 	Opcode   code.Opcode
 	Position int
@@ -31,14 +29,20 @@ type CompilationScope struct {
 }
 
 func New() *Compiler {
+	symbolTable := NewSymbolTable()
+	for i, v := range object.Builtins {
+		symbolTable.DefineBuiltin(i, v.Name)
+	}
+
 	mainScope := &CompilationScope{
 		instructions:    code.Instructions{},
 		lastInstruction: EmittedInstruction{},
 		prevInstruction: EmittedInstruction{},
 	}
+
 	return &Compiler{
 		constants:   []object.Object{},
-		symbolTable: NewSymbolTable(),
+		symbolTable: symbolTable,
 		scopes:      []CompilationScope{*mainScope},
 		scopeIdx:    0,
 	}
@@ -50,29 +54,6 @@ func NewWithState(s *SymbolTable, constansts []object.Object) *Compiler {
 	comp.constants = constansts
 
 	return comp
-}
-
-func WrapEvaluatorBuiltin(comp *Compiler, bltn object.BuiltinFunction) CompilerBuiltinFunction {
-	fn := func(symTable *SymbolTable, args ...object.Object) object.Object {
-		return bltn(symbolTableToEnvironment(comp, symTable))
-	}
-
-	return fn
-}
-
-func symbolTableToEnvironment(comp *Compiler, sym *SymbolTable) *object.Environment {
-	env := object.NewEnvironment()
-
-	if sym.Outer != nil {
-		outEnv := symbolTableToEnvironment(comp, sym.Outer)
-		env = object.NewLocalEnvironment(outEnv)
-	}
-
-	for k, v := range sym.store {
-		env.Set(k, comp.constants[v.Index])
-	}
-
-	return env
 }
 
 func (c *Compiler) Compile(node ast.Node) error {
@@ -221,11 +202,7 @@ func (c *Compiler) Compile(node ast.Node) error {
 			return fmt.Errorf("undefined variable %s", node.Value)
 		}
 
-		if sym.Scope == GlobalScope {
-			c.emit(code.OpGetGlobal, sym.Index)
-		} else {
-			c.emit(code.OpGetLocal, sym.Index)
-		}
+		c.loadSymbol(sym)
 
 	case *ast.StringLiteral:
 		str := &object.String{Value: node.Value}
@@ -289,8 +266,13 @@ func (c *Compiler) Compile(node ast.Node) error {
 			c.emit(code.OpReturn)
 		}
 
+		freeSymbols := c.symbolTable.FreeSymbols
 		numLocals := c.symbolTable.numDefs
 		instructions := c.leaveScope()
+
+		for _, s := range freeSymbols {
+			c.loadSymbol(s)
+		}
 
 		compiledFn := &object.CompiledFunction{
 			Instructions: instructions,
@@ -298,7 +280,8 @@ func (c *Compiler) Compile(node ast.Node) error {
 			NumParams:    len(node.Parameters),
 		}
 
-		c.emit(code.OpConstant, c.addConstant(compiledFn))
+		fnIdx := c.addConstant(compiledFn)
+		c.emit(code.OpClosure, fnIdx, len(freeSymbols))
 
 	case *ast.ReturnStatement:
 		if err := c.Compile(node.ReturnValue); err != nil {
@@ -434,4 +417,17 @@ func (c *Compiler) replaceLastPopWithReturn() {
 	c.replaceInstruction(lastPos, code.Make(code.OpReturnValue))
 
 	c.scopes[c.scopeIdx].lastInstruction.Opcode = code.OpReturnValue
+}
+
+func (c *Compiler) loadSymbol(s Symbol) {
+	switch s.Scope {
+	case GlobalScope:
+		c.emit(code.OpGetGlobal, s.Index)
+	case LocalScope:
+		c.emit(code.OpGetLocal, s.Index)
+	case BuiltinScope:
+		c.emit(code.OpGetBuiltin, s.Index)
+	case FreeScope:
+		c.emit(code.OpGetFree, s.Index)
+	}
 }
