@@ -183,14 +183,24 @@ func (c *Compiler) Compile(node ast.Node) error {
 			return err
 		}
 		sym := c.symbolTable.Define(node.Name.Value)
-		c.emit(code.OpSetGlobal, sym.Index)
+
+		if sym.Scope == GlobalScope {
+			c.emit(code.OpSetGlobal, sym.Index)
+		} else {
+			c.emit(code.OpSetLocal, sym.Index)
+		}
 
 	case *ast.Identifier:
 		sym, ok := c.symbolTable.Resolve(node.Value)
 		if !ok {
 			return fmt.Errorf("undefined variable %s", node.Value)
 		}
-		c.emit(code.OpGetGlobal, sym.Index)
+
+		if sym.Scope == GlobalScope {
+			c.emit(code.OpGetGlobal, sym.Index)
+		} else {
+			c.emit(code.OpGetLocal, sym.Index)
+		}
 
 	case *ast.StringLiteral:
 		str := &object.String{Value: node.Value}
@@ -364,6 +374,8 @@ func (c *Compiler) enterScope() {
 
 	c.scopes = append(c.scopes, scope)
 	c.scopeIdx++
+
+	c.symbolTable = NewEnclosedSymbolTable(c.symbolTable)
 }
 
 func (c *Compiler) leaveScope() code.Instructions {
@@ -371,6 +383,8 @@ func (c *Compiler) leaveScope() code.Instructions {
 
 	c.scopes = c.scopes[:len(c.scopes)-1]
 	c.scopeIdx--
+
+	c.symbolTable = c.symbolTable.Outer
 
 	return instructions
 }
