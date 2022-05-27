@@ -20,8 +20,6 @@ var Builtins = []struct {
 	{"toInt", &Builtin{Fn: bltnToInt}},
 	{"values", &Builtin{Fn: bltnValues}},
 	{"toBool", &Builtin{Fn: bltnToBool}},
-	{"locals", &Builtin{Fn: bltnLocals}},
-	{"globals", &Builtin{Fn: bltnGlobals}},
 }
 
 func newError(format string, a ...interface{}) *Error {
@@ -195,51 +193,6 @@ func bltnExit(env *Environment, args ...Object) Object {
 
 	os.Exit(exitCode)
 	return nil
-}
-
-func bltnGlobals(env *Environment, args ...Object) Object {
-	if len(args) != 0 {
-		return newError("the function globals doesnot take arguments. got = %d", len(args))
-	}
-
-	var findGlobal func(*Environment) *Environment
-	findGlobal = func(env *Environment) *Environment {
-		if env.Outer() != nil {
-			return findGlobal(env.Outer())
-		} else {
-			return env
-		}
-	}
-
-	globalEnv := findGlobal(env)
-
-	pairs := make(map[HashKey]HashPair)
-	for key, value := range globalEnv.Store() {
-		pairKey := &String{Value: key}
-		pairValue := value
-		pairs[pairKey.HashKey()] = HashPair{
-			Key:   pairKey,
-			Value: pairValue,
-		}
-	}
-	return &Hash{Pairs: pairs}
-}
-
-func bltnLocals(env *Environment, args ...Object) Object {
-	if len(args) != 0 {
-		return newError("the function globals doesnot take arguments. got = %d", len(args))
-	}
-
-	pairs := make(map[HashKey]HashPair)
-	for key, value := range env.Store() {
-		pairKey := &String{Value: key}
-		pairValue := value
-		pairs[pairKey.HashKey()] = HashPair{
-			Key:   pairKey,
-			Value: pairValue,
-		}
-	}
-	return &Hash{Pairs: pairs}
 }
 
 func bltnToInt(env *Environment, args ...Object) Object {
