@@ -431,7 +431,13 @@ func (c *Compiler) loadSymbol(s Symbol) {
 	case LocalScope:
 		c.emit(code.OpGetLocal, s.Index)
 	case BuiltinScope:
-		c.emit(code.OpGetBuiltin, s.Index)
+		if s.Name == "locals" {
+			c.emit(code.OpCallLocals, s.Index)
+		} else if s.Name == "globals" {
+			c.emit(code.OpCallGlobals, s.Index)
+		} else {
+			c.emit(code.OpGetBuiltin, s.Index)
+		}
 	case FreeScope:
 		c.emit(code.OpGetFree, s.Index)
 	case FunctionScope:
