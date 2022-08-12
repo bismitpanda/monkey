@@ -432,6 +432,29 @@ func (c *Compiler) loadSymbol(s Symbol) {
 		c.emit(code.OpGetLocal, s.Index)
 	case BuiltinScope:
 		if s.Name == "locals" {
+			node := &ast.HashLiteral{}
+			for k, v := range c.symbolTable.store {
+				c.addConstant(&object.String{Value: k})
+				c.addConstant(c.constants[v.Index])
+			}
+
+			keys := []ast.Expression{}
+			for k := range node.Pairs {
+				keys = append(keys, k)
+			}
+			sort.Slice(keys, func(i, j int) bool {
+				return keys[i].String() < keys[j].String()
+			})
+			for _, k := range keys {
+				if err := c.Compile(k); err != nil {
+					panic(err)
+				}
+
+				if err := c.Compile(node.Pairs[k]); err != nil {
+					panic(err)
+				}
+			}
+			c.emit(code.OpHash, len(node.Pairs)*2)
 			c.emit(code.OpCallLocals, s.Index)
 		} else if s.Name == "globals" {
 			c.emit(code.OpCallGlobals, s.Index)

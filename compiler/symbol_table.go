@@ -73,6 +73,7 @@ func (s *SymbolTable) Resolve(name string) (Symbol, bool) {
 		free := s.defineFree(obj)
 		return free, true
 	}
+
 	return obj, ok
 }
 
